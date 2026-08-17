@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Ravi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="game-wrapper">
+
+        <div class="top-bar">
+            <div class="logo">FLAPPY RAVI</div>
+
+            <div class="score">
+                SCORE: <span id="score">0</span>
+            </div>
+        </div>
+
+        <div class="game-container">
+
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- START SCREEN -->
+
+            <div id="startScreen" class="overlay">
+
+                <h1>FLAPPY RAVI</h1>
+
+                <p>
+                    Help Ravi escape the pipes 💀
+                </p>
+
+                <button id="startButton">
+                    START GAME
+                </button>
+
+                <div class="controls">
+                    SPACE / CLICK / TAP
+                </div>
+
+            </div>
+
+
+            <!-- GAME OVER -->
+
+            <div id="gameOverScreen" class="overlay hidden">
+
+                <div class="game-over-box">
+
+                    <div class="big-text">
+                        GHARE JAAKE
+                    </div>
+
+                    <div class="big-text">
+                        SUTTI BABU
+                    </div>
+
+                    <div class="final-score">
+                        SCORE:
+                        <span id="finalScore">0</span>
+                    </div>
+
+                    <button id="restartButton">
+                        PLAY AGAIN
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="bottom-text">
+            INC PRESENTS • FLAPPY RAVI
+        </div>
+
+    </div>
+
+    <script src="game.js"></script>
+
+</body>
+</html>
