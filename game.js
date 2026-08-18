@@ -26,14 +26,13 @@ pipeImg.src = "assets/manojtiwari.webp";
 
 const flapSound = new Audio("assets/flap.mp3");
 
-// GAME OVER SOUND
+// YOUR GAME OVER FILE
 const gameOverSound = new Audio("assetsgameover.mp3");
+
 gameOverSound.volume = 0.9;
 
 
-// CONTINUOUS MUSIC
-// These tracks play one after another.
-
+// Continuous music
 const musicTracks = [
     new Audio("assets/peshaan-ravi-kishan.mp3"),
     new Audio("assets/koteshwaraye-ravi-kishan.mp3"),
@@ -41,15 +40,15 @@ const musicTracks = [
 ];
 
 let currentMusic = 0;
-let musicStarted = false;
+let musicPlaying = false;
 
-musicTracks.forEach(track => {
+musicTracks.forEach(function(track) {
     track.volume = 0.35;
 });
 
 
 // ===============================
-// GAME SETTINGS
+// SETTINGS
 // ===============================
 
 const GRAVITY = 0.42;
@@ -59,18 +58,13 @@ const RAVI_SIZE = 42;
 
 const PIPE_WIDTH = 70;
 
-
-// MUCH HARDER
+// HARDER
 const START_GAP = 110;
 const MIN_GAP = 90;
 
-
-// SPEED
 const START_SPEED = 3.1;
 const MAX_SPEED = 5.2;
 
-
-// DISTANCE BETWEEN PIPES
 const PIPE_DISTANCE = 250;
 
 
@@ -93,8 +87,8 @@ let ravi = {
 let pipes = [];
 let score = 0;
 
-let gameOver = false;
 let started = false;
+let gameOver = false;
 
 let pipeSpeed = START_SPEED;
 let pipeGap = START_GAP;
@@ -107,6 +101,7 @@ let pipeGap = START_GAP;
 function drawBackground() {
 
     ctx.fillStyle = "#87CEEB";
+
     ctx.fillRect(
         0,
         0,
@@ -115,16 +110,12 @@ function drawBackground() {
     );
 
 
-    // Clouds
-
     ctx.fillStyle = "rgba(255,255,255,0.75)";
 
     drawCloud(70, 100, 1);
     drawCloud(300, 160, 0.8);
     drawCloud(180, 50, 0.6);
 
-
-    // Ground
 
     ctx.fillStyle = "#65b84f";
 
@@ -180,7 +171,7 @@ function drawCloud(x, y, scale) {
 
 
 // ===============================
-// DRAW RAVI
+// RAVI
 // ===============================
 
 function drawRavi() {
@@ -193,11 +184,7 @@ function drawRavi() {
     const centerY =
         ravi.y + RAVI_SIZE / 2;
 
-
-    ctx.translate(
-        centerX,
-        centerY
-    );
+    ctx.translate(centerX, centerY);
 
 
     ravi.rotation = Math.min(
@@ -244,13 +231,12 @@ function drawRavi() {
         ctx.fill();
     }
 
-
     ctx.restore();
 }
 
 
 // ===============================
-// DRAW PIPE
+// PIPES
 // ===============================
 
 function drawPipe(pipe) {
@@ -266,7 +252,7 @@ function drawPipe(pipe) {
         pipeImg.naturalWidth > 0
     ) {
 
-        // TOP PIPE
+        // TOP
 
         ctx.save();
 
@@ -288,7 +274,7 @@ function drawPipe(pipe) {
         ctx.restore();
 
 
-        // BOTTOM PIPE
+        // BOTTOM
 
         ctx.drawImage(
             pipeImg,
@@ -299,8 +285,6 @@ function drawPipe(pipe) {
         );
 
     } else {
-
-        // FALLBACK PIPE
 
         ctx.fillStyle = "#159447";
 
@@ -317,23 +301,6 @@ function drawPipe(pipe) {
             PIPE_WIDTH,
             canvas.height - bottomY
         );
-
-
-        ctx.fillStyle = "#0c7134";
-
-        ctx.fillRect(
-            pipe.x - 5,
-            topHeight - 20,
-            PIPE_WIDTH + 10,
-            20
-        );
-
-        ctx.fillRect(
-            pipe.x - 5,
-            bottomY,
-            PIPE_WIDTH + 10,
-            20
-        );
     }
 }
 
@@ -343,8 +310,6 @@ function drawPipe(pipe) {
 // ===============================
 
 function createPipe(x) {
-
-    // Keep pipes away from the extreme top/bottom
 
     const minTop = 55;
 
@@ -359,20 +324,14 @@ function createPipe(x) {
         Math.floor(
             Math.random() *
             (maxTop - minTop)
-        ) +
-        minTop;
+        ) + minTop;
 
 
     pipes.push({
-
         x: x,
-
         gapY: gapY,
-
         gap: pipeGap,
-
         passed: false
-
     });
 }
 
@@ -381,98 +340,123 @@ function createPipe(x) {
 // MUSIC
 // ===============================
 
-function playNextMusic() {
+function playMusic() {
+
+    if (musicPlaying) return;
+
+    musicPlaying = true;
+
+    currentMusic = 0;
+
+    playCurrentTrack();
+}
+
+
+function playCurrentTrack() {
 
     if (gameOver) return;
 
     const track =
         musicTracks[currentMusic];
 
-
     track.currentTime = 0;
 
-    track.play().catch(() => {});
+    track.play().catch(function(error) {
+        console.log("Music waiting for browser permission:", error);
+    });
 
 
     track.onended = function() {
 
         if (!gameOver) {
 
-            currentMusic =
-                (currentMusic + 1) %
-                musicTracks.length;
+            currentMusic++;
 
-            playNextMusic();
+            if (
+                currentMusic >=
+                musicTracks.length
+            ) {
+                currentMusic = 0;
+            }
+
+            playCurrentTrack();
         }
     };
 }
 
 
-function startMusic() {
-
-    if (musicStarted) return;
-
-    musicStarted = true;
-
-    currentMusic = 0;
-
-    playNextMusic();
-}
-
-
 function stopMusic() {
 
-    musicTracks.forEach(track => {
+    musicTracks.forEach(function(track) {
 
         track.pause();
 
         track.currentTime = 0;
 
         track.onended = null;
-
     });
 
-    musicStarted = false;
+    musicPlaying = false;
 }
 
 
 // ===============================
-// RESET GAME
+// RESET
 // ===============================
 
 function resetGame() {
 
     ravi.x = 80;
-
     ravi.y = 280;
 
     ravi.velocity = 0;
-
     ravi.rotation = 0;
-
 
     pipes = [];
 
     score = 0;
 
-
-    pipeSpeed =
-        START_SPEED;
-
-    pipeGap =
-        START_GAP;
-
-
-    gameOver = false;
+    pipeSpeed = START_SPEED;
+    pipeGap = START_GAP;
 
     started = false;
+    gameOver = false;
 
-
-    // FIRST PIPE
 
     createPipe(
         canvas.width + 120
     );
+}
+
+
+// ===============================
+// ACTUALLY START GAME
+// ===============================
+
+function startGame() {
+
+    // If game was over, reset first
+    if (gameOver) {
+
+        stopMusic();
+
+        resetGame();
+    }
+
+
+    started = true;
+
+    gameOver = false;
+
+    // Start music
+    playMusic();
+
+    // Initial jump
+    ravi.velocity = FLAP_POWER;
+
+    flapSound.currentTime = 0;
+
+    flapSound.play().catch(function() {});
 }
 
 
@@ -482,33 +466,27 @@ function resetGame() {
 
 function flap() {
 
-    // If dead, restart
+    if (!started) {
 
-    if (gameOver) {
-
-        stopMusic();
-
-        resetGame();
+        startGame();
 
         return;
     }
 
 
-    started = true;
+    if (gameOver) {
+
+        startGame();
+
+        return;
+    }
 
 
-    // Start music after user interaction
-
-    startMusic();
-
-
-    ravi.velocity =
-        FLAP_POWER;
-
+    ravi.velocity = FLAP_POWER;
 
     flapSound.currentTime = 0;
 
-    flapSound.play().catch(() => {});
+    flapSound.play().catch(function() {});
 }
 
 
@@ -518,8 +496,6 @@ function flap() {
 
 function checkCollision(pipe) {
 
-    // Small hitbox padding
-
     const padding = 6;
 
 
@@ -527,57 +503,43 @@ function checkCollision(pipe) {
         ravi.x + padding;
 
     const raviRight =
-        ravi.x +
-        RAVI_SIZE -
-        padding;
+        ravi.x + RAVI_SIZE - padding;
 
     const raviTop =
         ravi.y + padding;
 
     const raviBottom =
-        ravi.y +
-        RAVI_SIZE -
-        padding;
+        ravi.y + RAVI_SIZE - padding;
 
 
     const pipeLeft =
         pipe.x;
 
     const pipeRight =
-        pipe.x +
-        PIPE_WIDTH;
+        pipe.x + PIPE_WIDTH;
 
 
-    const topPipeBottom =
+    const topBottom =
         pipe.gapY;
 
-
-    const bottomPipeTop =
-        pipe.gapY +
-        pipe.gap;
+    const bottomTop =
+        pipe.gapY + pipe.gap;
 
 
-    const horizontalCollision =
+    const horizontal =
         raviRight > pipeLeft &&
         raviLeft < pipeRight;
 
 
-    if (!horizontalCollision) {
-
+    if (!horizontal) {
         return false;
     }
 
 
-    if (
-        raviTop < topPipeBottom ||
-        raviBottom > bottomPipeTop
-    ) {
-
-        return true;
-    }
-
-
-    return false;
+    return (
+        raviTop < topBottom ||
+        raviBottom > bottomTop
+    );
 }
 
 
@@ -589,29 +551,24 @@ function endGame() {
 
     if (gameOver) return;
 
-
     gameOver = true;
 
-
-    // STOP MUSIC
-
     stopMusic();
-
-
-    // STOP FLAP
 
     flapSound.pause();
 
     flapSound.currentTime = 0;
 
 
-    // GAME OVER SOUND 💀
+    // PLAY GAME OVER SOUND
 
     gameOverSound.pause();
 
     gameOverSound.currentTime = 0;
 
-    gameOverSound.play().catch(() => {});
+    gameOverSound.play().catch(function(error) {
+        console.log("Game over sound error:", error);
+    });
 
 
     drawGameOver();
@@ -624,31 +581,24 @@ function endGame() {
 
 function update() {
 
-    if (
-        !started ||
-        gameOver
-    ) {
-
+    if (!started || gameOver) {
         return;
     }
 
 
-    // GRAVITY
+    // Gravity
 
     ravi.velocity += GRAVITY;
 
     ravi.y += ravi.velocity;
 
 
-    // ===========================
-    // DIFFICULTY
-    // ===========================
+    // Difficulty
 
     pipeSpeed =
         Math.min(
             START_SPEED +
             score * 0.10,
-
             MAX_SPEED
         );
 
@@ -657,14 +607,11 @@ function update() {
         Math.max(
             START_GAP -
             score * 1.5,
-
             MIN_GAP
         );
 
 
-    // ===========================
-    // MOVE PIPES
-    // ===========================
+    // Move pipes
 
     for (
         let i = pipes.length - 1;
@@ -679,13 +626,11 @@ function update() {
         pipe.x -= pipeSpeed;
 
 
-        // SCORE
+        // Score
 
         if (
             !pipe.passed &&
-            pipe.x +
-            PIPE_WIDTH <
-            ravi.x
+            pipe.x + PIPE_WIDTH < ravi.x
         ) {
 
             pipe.passed = true;
@@ -694,7 +639,7 @@ function update() {
         }
 
 
-        // COLLISION
+        // Collision
 
         if (
             checkCollision(pipe)
@@ -706,12 +651,10 @@ function update() {
         }
 
 
-        // REMOVE OLD PIPE
+        // Remove
 
         if (
-            pipe.x +
-            PIPE_WIDTH <
-            -20
+            pipe.x + PIPE_WIDTH < -20
         ) {
 
             pipes.splice(i, 1);
@@ -719,9 +662,7 @@ function update() {
     }
 
 
-    // ===========================
-    // NEXT PIPE
-    // ===========================
+    // New pipe
 
     const lastPipe =
         pipes[pipes.length - 1];
@@ -730,8 +671,7 @@ function update() {
     if (
         !lastPipe ||
         lastPipe.x <
-        canvas.width -
-        PIPE_DISTANCE
+        canvas.width - PIPE_DISTANCE
     ) {
 
         createPipe(
@@ -740,9 +680,7 @@ function update() {
     }
 
 
-    // ===========================
-    // CEILING
-    // ===========================
+    // Ceiling
 
     if (ravi.y <= 0) {
 
@@ -754,13 +692,10 @@ function update() {
     }
 
 
-    // ===========================
-    // GROUND
-    // ===========================
+    // Ground
 
     if (
-        ravi.y +
-        RAVI_SIZE >=
+        ravi.y + RAVI_SIZE >=
         canvas.height - 55
     ) {
 
@@ -768,7 +703,6 @@ function update() {
             canvas.height -
             55 -
             RAVI_SIZE;
-
 
         endGame();
 
@@ -785,7 +719,6 @@ function drawScore() {
 
     ctx.save();
 
-
     ctx.font =
         "bold 42px Arial";
 
@@ -793,11 +726,8 @@ function drawScore() {
         "center";
 
 
-    // Shadow
-
     ctx.fillStyle =
         "rgba(0,0,0,0.35)";
-
 
     ctx.fillText(
         score,
@@ -806,11 +736,8 @@ function drawScore() {
     );
 
 
-    // Score
-
     ctx.fillStyle =
         "white";
-
 
     ctx.fillText(
         score,
@@ -829,11 +756,7 @@ function drawScore() {
 
 function drawStartScreen() {
 
-    if (
-        started ||
-        gameOver
-    ) {
-
+    if (started || gameOver) {
         return;
     }
 
@@ -899,7 +822,7 @@ function drawStartScreen() {
 
 
 // ===============================
-// GAME OVER SCREEN
+// GAME OVER
 // ===============================
 
 function drawGameOver() {
@@ -973,9 +896,7 @@ function draw() {
     drawBackground();
 
 
-    for (
-        const pipe of pipes
-    ) {
+    for (const pipe of pipes) {
 
         drawPipe(pipe);
     }
@@ -983,9 +904,7 @@ function draw() {
 
     drawRavi();
 
-
     drawScore();
-
 
     drawStartScreen();
 
@@ -1035,7 +954,7 @@ document.addEventListener(
 
 
 // ===============================
-// MOUSE
+// CANVAS CLICK
 // ===============================
 
 canvas.addEventListener(
@@ -1067,7 +986,32 @@ canvas.addEventListener(
 
 
 // ===============================
-// START
+// SUPPORT YOUR EXISTING START BUTTON
+// ===============================
+
+// If your HTML has a button with id="startButton",
+// this makes it work automatically.
+
+const startButton =
+    document.getElementById("startButton");
+
+if (startButton) {
+
+    startButton.addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            startGame();
+
+        }
+    );
+}
+
+
+// ===============================
+// INITIALIZE
 // ===============================
 
 resetGame();
