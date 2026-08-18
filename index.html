@@ -1,85 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Ravi</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <title>Flappy Ravi</title>
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 
-    <div class="game-wrapper">
+  <main id="gameShell">
 
-        <div class="top-bar">
-            <div class="logo">FLAPPY RAVI</div>
+    <canvas id="game"></canvas>
 
-            <div class="score">
-                SCORE: <span id="score">0</span>
-            </div>
-        </div>
+    <div id="hud">
+      <div id="score">0</div>
 
-        <div class="game-container">
-
-            <canvas id="gameCanvas"></canvas>
-
-            <!-- START SCREEN -->
-
-            <div id="startScreen" class="overlay">
-
-                <h1>FLAPPY RAVI</h1>
-
-                <p>
-                    Help Ravi escape the pipes 💀
-                </p>
-
-                <button id="startButton">
-                    START GAME
-                </button>
-
-                <div class="controls">
-                    SPACE / CLICK / TAP
-                </div>
-
-            </div>
-
-
-            <!-- GAME OVER -->
-
-            <div id="gameOverScreen" class="overlay hidden">
-
-                <div class="game-over-box">
-
-                    <div class="big-text">
-                        GHARE JAAKE
-                    </div>
-
-                    <div class="big-text">
-                        SUTTI BABU
-                    </div>
-
-                    <div class="final-score">
-                        SCORE:
-                        <span id="finalScore">0</span>
-                    </div>
-
-                    <button id="restartButton">
-                        PLAY AGAIN
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="bottom-text">
-            INC PRESENTS • FLAPPY RAVI
-        </div>
-
+      <button id="muteBtn" type="button">
+        🔊
+      </button>
     </div>
 
-    <script src="game.js"></script>
+    <!-- START SCREEN -->
+
+    <section id="startScreen" class="overlay">
+
+      <div class="card">
+
+        <div class="eyebrow">
+          INC PRESENTS
+        </div>
+
+        <h1>
+          FLAPPY RAVI
+        </h1>
+
+        <p>
+          Tap / Click / Press <b>SPACE</b> to fly.
+        </p>
+
+        <button id="startBtn" class="primary">
+          START GAME
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- GAME OVER -->
+
+    <section id="gameOverScreen" class="overlay hidden">
+
+      <div class="card">
+
+        <div class="eyebrow">
+          ARRE BHAI 😭
+        </div>
+
+        <h2>
+          GAME OVER
+        </h2>
+
+        <p>
+          Score:
+          <b id="finalScore">0</b>
+        </p>
+
+        <p>
+          Best:
+          <b id="bestScore">0</b>
+        </p>
+
+        <button id="restartBtn" class="primary">
+          PLAY AGAIN
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <div id="tapHint">
+      TAP TO FLY
+    </div>
+
+  </main>
+
+  <script src="game.js"></script>
 
 </body>
 </html>
