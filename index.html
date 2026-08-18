@@ -1,95 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta charset="UTF-8">
 
-  <title>Flappy Ravi</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <link rel="stylesheet" href="style.css" />
+    <title>Flappy Ravi</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
 
 <body>
 
-  <main id="gameShell">
+    <div class="game-wrapper">
 
-    <canvas id="game"></canvas>
-
-    <div id="hud">
-      <div id="score">0</div>
-
-      <button id="muteBtn" type="button">
-        🔊
-      </button>
-    </div>
-
-    <!-- START SCREEN -->
-
-    <section id="startScreen" class="overlay">
-
-      <div class="card">
-
-        <div class="eyebrow">
-          INC PRESENTS
+        <div class="title">
+            FLAPPY RAVI
         </div>
 
-        <h1>
-          FLAPPY RAVI
-        </h1>
+        <div class="game-container">
 
-        <p>
-          Tap / Click / Press <b>SPACE</b> to fly.
-        </p>
+            <canvas
+                id="gameCanvas"
+                width="400"
+                height="600"
+            ></canvas>
 
-        <button id="startBtn" class="primary">
-          START GAME
-        </button>
+            <div
+                id="startScreen"
+                class="start-screen"
+            >
 
-      </div>
+                <h1>FLAPPY RAVI</h1>
 
-    </section>
+                <p>
+                    Don't hit Manoj Tiwari 💀
+                </p>
 
+                <button
+                    id="startButton"
+                    type="button"
+                >
+                    START GAME
+                </button>
 
-    <!-- GAME OVER -->
+                <span>
+                    Space / Click to fly
+                </span>
 
-    <section id="gameOverScreen" class="overlay hidden">
+            </div>
 
-      <div class="card">
+            <div
+                id="gameOverScreen"
+                class="game-over-screen hidden"
+            >
 
-        <div class="eyebrow">
-          ARRE BHAI 😭
+                <h1>GAME OVER</h1>
+
+                <p>
+                    Score:
+                    <span id="finalScore">0</span>
+                </p>
+
+                <button
+                    id="restartButton"
+                    type="button"
+                >
+                    PLAY AGAIN
+                </button>
+
+            </div>
+
         </div>
 
-        <h2>
-          GAME OVER
-        </h2>
-
-        <p>
-          Score:
-          <b id="finalScore">0</b>
-        </p>
-
-        <p>
-          Best:
-          <b id="bestScore">0</b>
-        </p>
-
-        <button id="restartBtn" class="primary">
-          PLAY AGAIN
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <div id="tapHint">
-      TAP TO FLY
     </div>
 
-  </main>
-
-  <script src="game.js"></script>
+    <script src="game.js"></script>
 
 </body>
+
 </html>
