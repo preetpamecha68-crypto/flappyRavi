@@ -1,937 +1,1509 @@
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const scoreElement =
-    document.getElementById("score");
-
-const finalScoreElement =
-    document.getElementById("finalScore");
+const scoreEl = document.getElementById("score");
 
 const startScreen =
-    document.getElementById("startScreen");
+  document.getElementById("startScreen");
 
 const gameOverScreen =
-    document.getElementById("gameOverScreen");
+  document.getElementById("gameOverScreen");
 
-const startButton =
-    document.getElementById("startButton");
+const startBtn =
+  document.getElementById("startBtn");
 
-const restartButton =
-    document.getElementById("restartButton");
+const restartBtn =
+  document.getElementById("restartBtn");
 
+const finalScoreEl =
+  document.getElementById("finalScore");
 
-// =============================
-// GAME SETTINGS
-// =============================
+const bestScoreEl =
+  document.getElementById("bestScore");
 
-const GAME_WIDTH = 360;
-const GAME_HEIGHT = 640;
+const muteBtn =
+  document.getElementById("muteBtn");
 
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
-
-
-// =============================
-// RAVI IMAGE
-// =============================
-
-const raviImage = new Image();
-
-raviImage.src = "ravi.jpg";
+const tapHint =
+  document.getElementById("tapHint");
 
 
-// =============================
-// GAME VARIABLES
-// =============================
+/* =========================================
+   CHARACTER
+========================================= */
 
-let gameRunning = false;
-let gameStarted = false;
+const raviImg = new Image();
 
-let score = 0;
-
-let gravity = 0.42;
-
-let jumpStrength = -7.5;
-
-let pipeSpeed = 2.6;
-
-let frame = 0;
+raviImg.src = "assets/ravi.png";
 
 
-// =============================
-// RAVI
-// =============================
+/* =========================================
+   MANOJ TIWARI
+========================================= */
 
-const ravi = {
+const manojImg = new Image();
 
-    x: 80,
+manojImg.src = "assets/manoj-tiwari.webp";
 
-    y: 300,
 
-    width: 58,
+/* =========================================
+   MUSIC
+========================================= */
 
-    height: 58,
+const tracks = [
 
-    velocity: 0,
+  new Audio(
+    "assets/peshaan-ravi-kishan.mp3"
+  ),
 
-    rotation: 0
+  new Audio(
+    "assets/koteshwaraye-ravi-kishan.mp3"
+  ),
+
+  new Audio(
+    "assets/mai-teri-queen-ravi-kishan.mp3"
+  )
+
+];
+
+tracks.forEach(audio => {
+
+  audio.preload = "auto";
+
+  audio.volume = 0.72;
+
+});
+
+
+/* =========================================
+   GAME OVER AUDIO
+========================================= */
+
+const gameOverAudio =
+  new Audio(
+    "assets/game-over-manoj-tiwari.mp3"
+  );
+
+gameOverAudio.preload = "auto";
+
+gameOverAudio.volume = 0.9;
+
+
+/* =========================================
+   AUDIO SYSTEM
+========================================= */
+
+let currentTrack = -1;
+
+let muted = false;
+
+
+tracks.forEach((audio, i) => {
+
+  audio.addEventListener(
+    "ended",
+    () => {
+
+      if (running && !muted) {
+
+        playNextTrack(i);
+
+      }
+
+    }
+  );
+
+});
+
+
+function playNextTrack(previous = currentTrack) {
+
+  tracks.forEach(audio => {
+
+    audio.pause();
+
+    audio.currentTime = 0;
+
+  });
+
+
+  let next =
+    (previous + 1) % tracks.length;
+
+
+  currentTrack = next;
+
+
+  if (!muted) {
+
+    tracks[currentTrack]
+      .play()
+      .catch(() => {});
+
+  }
+
+}
+
+
+function stopMusic() {
+
+  tracks.forEach(audio => {
+
+    audio.pause();
+
+    audio.currentTime = 0;
+
+  });
+
+}
+
+
+/* =========================================
+   MUTE
+========================================= */
+
+muteBtn.addEventListener(
+  "click",
+  (e) => {
+
+    e.stopPropagation();
+
+    muted = !muted;
+
+    muteBtn.textContent =
+      muted ? "🔇" : "🔊";
+
+
+    if (muted) {
+
+      tracks.forEach(audio =>
+        audio.pause()
+      );
+
+      gameOverAudio.pause();
+
+    }
+
+    else if (running) {
+
+      tracks[currentTrack]
+        .play()
+        .catch(() => {});
+
+    }
+
+  }
+);
+
+
+/* =========================================
+   CANVAS
+========================================= */
+
+let W = 520;
+
+let H = 920;
+
+let dpr =
+  Math.min(
+    window.devicePixelRatio || 1,
+    2
+  );
+
+
+function resize() {
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  W = rect.width;
+
+  H = rect.height;
+
+
+  dpr =
+    Math.min(
+      window.devicePixelRatio || 1,
+      2
+    );
+
+
+  canvas.width =
+    Math.floor(W * dpr);
+
+  canvas.height =
+    Math.floor(H * dpr);
+
+
+  ctx.setTransform(
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
+  );
+
+}
+
+
+window.addEventListener(
+  "resize",
+  resize
+);
+
+resize();
+
+
+/* =========================================
+   GAME SETTINGS
+========================================= */
+
+const state = {
+
+  gravity: 1250,
+
+  flap: -395,
+
+  speed: 205,
+
+  gap: 190,
+
+  pipeWidth: 72,
+
+  ground: 72
 
 };
 
 
-// =============================
-// PIPES
-// =============================
+/* =========================================
+   GAME VARIABLES
+========================================= */
+
+let ravi;
 
 let pipes = [];
 
-const pipeWidth = 65;
+let particles = [];
 
-const pipeGap = 165;
+let score = 0;
 
+let best =
+  Number(
+    localStorage.getItem(
+      "flappyRaviBest"
+    ) || 0
+  );
 
-function createPipe() {
+let running = false;
 
-    const minTop = 80;
+let lastTime = 0;
 
-    const maxTop =
-        GAME_HEIGHT -
-        pipeGap -
-        100;
-
-    const topHeight =
-        Math.floor(
-            Math.random() *
-            (maxTop - minTop)
-        ) + minTop;
-
-    pipes.push({
-
-        x: GAME_WIDTH,
-
-        top: topHeight,
-
-        bottom:
-            topHeight + pipeGap,
-
-        passed: false
-
-    });
-}
+let spawnTimer = 0;
 
 
-// =============================
-// RESET
-// =============================
+bestScoreEl.textContent = best;
+
+
+/* =========================================
+   RESET
+========================================= */
 
 function resetGame() {
 
-    score = 0;
+  score = 0;
 
-    frame = 0;
+  scoreEl.textContent = "0";
 
-    pipes = [];
+  pipes = [];
 
-    ravi.y = 300;
+  particles = [];
 
-    ravi.velocity = 0;
+  spawnTimer = 0;
 
-    ravi.rotation = 0;
 
-    scoreElement.textContent = score;
+  ravi = {
 
-    createPipe();
+    x: W * 0.25,
+
+    y: H * 0.45,
+
+    vy: 0,
+
+    rotation: 0,
+
+    w: Math.min(
+      112,
+      W * 0.23
+    ),
+
+    h: Math.min(
+      76,
+      W * 0.16
+    )
+
+  };
+
+
+  for (
+    let i = 0;
+    i < 3;
+    i++
+  ) {
+
+    spawnPipe(
+      W + 100 + i * 260
+    );
+
+  }
+
 }
 
 
-// =============================
-// START GAME
-// =============================
+/* =========================================
+   CREATE PIPE
+========================================= */
+
+function spawnPipe(x) {
+
+  const topMin = 100;
+
+  const bottomMin = 130;
+
+  const playableBottom =
+    H - state.ground;
+
+
+  const gap =
+    Math.max(
+      150,
+      Math.min(
+        state.gap,
+        H * 0.25
+      )
+    );
+
+
+  const maxTop =
+    playableBottom -
+    bottomMin -
+    gap;
+
+
+  const top =
+    topMin +
+    Math.random() *
+    Math.max(
+      20,
+      maxTop - topMin
+    );
+
+
+  pipes.push({
+
+    x,
+
+    top,
+
+    gap,
+
+    scored: false,
+
+    /* Random Manoj appearance */
+
+    hasManoj:
+      Math.random() < 0.48,
+
+    /* Top or bottom pipe */
+
+    manojOnTop:
+      Math.random() < 0.5,
+
+    manojScale:
+      0.82 +
+      Math.random() * 0.28
+
+  });
+
+}
+
+
+/* =========================================
+   FLAP
+========================================= */
+
+function flap() {
+
+  if (!running) return;
+
+
+  ravi.vy =
+    state.flap;
+
+
+  for (
+    let i = 0;
+    i < 5;
+    i++
+  ) {
+
+    particles.push({
+
+      x:
+        ravi.x -
+        ravi.w * 0.35,
+
+      y:
+        ravi.y +
+        ravi.h * 0.2,
+
+      vx:
+        -70 -
+        Math.random() * 80,
+
+      vy:
+        (Math.random() - 0.5) *
+        80,
+
+      life:
+        0.35 +
+        Math.random() * 0.2
+
+    });
+
+  }
+
+}
+
+
+/* =========================================
+   START GAME
+========================================= */
 
 function startGame() {
 
-    resetGame();
+  gameOverAudio.pause();
 
-    gameRunning = true;
+  gameOverAudio.currentTime = 0;
 
-    gameStarted = true;
 
-    startScreen.classList.add("hidden");
+  resetGame();
 
-    gameOverScreen.classList.add("hidden");
 
-    requestAnimationFrame(gameLoop);
+  running = true;
+
+
+  startScreen
+    .classList
+    .add("hidden");
+
+
+  gameOverScreen
+    .classList
+    .add("hidden");
+
+
+  tapHint
+    .classList
+    .remove("hidden");
+
+
+  playNextTrack();
+
+
+  lastTime =
+    performance.now();
+
+
+  requestAnimationFrame(loop);
+
 }
 
 
-// =============================
-// GAME OVER
-// =============================
+/* =========================================
+   GAME OVER
+========================================= */
 
 function gameOver() {
 
-    if (!gameRunning) return;
+  if (!running) return;
 
-    gameRunning = false;
 
-    finalScoreElement.textContent = score;
+  running = false;
 
-    gameOverScreen.classList.remove("hidden");
-}
 
-
-// =============================
-// JUMP
-// =============================
-
-function jump() {
-
-    if (!gameRunning) return;
-
-    ravi.velocity = jumpStrength;
-}
-
-
-// =============================
-// KEYBOARD
-// =============================
-
-document.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.code === "Space" ||
-            event.code === "ArrowUp"
-        ) {
-
-            event.preventDefault();
-
-            if (!gameStarted) {
-
-                startGame();
-
-                return;
-            }
-
-            jump();
-        }
-
-    }
-);
-
-
-// =============================
-// MOUSE
-// =============================
-
-canvas.addEventListener(
-    "mousedown",
-    function() {
-
-        if (gameRunning) {
-
-            jump();
-
-        }
-
-    }
-);
-
-
-// =============================
-// TOUCH
-// =============================
-
-canvas.addEventListener(
-    "touchstart",
-    function(event) {
-
-        event.preventDefault();
-
-        if (gameRunning) {
-
-            jump();
-
-        }
-
-    },
-    {
-        passive: false
-    }
-);
-
-
-// =============================
-// BUTTONS
-// =============================
-
-startButton.addEventListener(
-    "click",
-    startGame
-);
-
-restartButton.addEventListener(
-    "click",
-    startGame
-);
-
-
-// =============================
-// UPDATE RAVI
-// =============================
-
-function updateRavi() {
-
-    ravi.velocity += gravity;
-
-    ravi.y += ravi.velocity;
-
-
-    ravi.rotation =
-        Math.min(
-            Math.max(
-                ravi.velocity * 4,
-                -25
-            ),
-            90
-        );
-
-
-    // Ceiling
-
-    if (ravi.y < 0) {
-
-        ravi.y = 0;
-
-        ravi.velocity = 0;
-    }
-
-
-    // Ground
-
-    if (
-        ravi.y +
-        ravi.height >=
-        GAME_HEIGHT
-    ) {
-
-        gameOver();
-
-    }
-}
-
-
-// =============================
-// UPDATE PIPES
-// =============================
-
-function updatePipes() {
-
-    for (
-        let i = pipes.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const pipe = pipes[i];
-
-        pipe.x -= pipeSpeed;
-
-
-        // SCORE
-
-        if (
-            !pipe.passed &&
-            pipe.x +
-            pipeWidth <
-            ravi.x
-        ) {
-
-            pipe.passed = true;
-
-            score++;
-
-            scoreElement.textContent =
-                score;
-        }
-
-
-        // REMOVE PIPE
-
-        if (
-            pipe.x +
-            pipeWidth <
-            0
-        ) {
-
-            pipes.splice(i, 1);
-        }
-
-
-        // COLLISION
-
-        if (
-            checkCollision(pipe)
-        ) {
-
-            gameOver();
-
-        }
-
-    }
-
-
-    // CREATE NEW PIPE
-
-    if (
-        pipes.length === 0 ||
-        pipes[
-            pipes.length - 1
-        ].x < 190
-    ) {
-
-        createPipe();
-
-    }
-}
-
-
-// =============================
-// COLLISION
-// =============================
-
-function checkCollision(pipe) {
-
-    const padding = 9;
-
-
-    const raviLeft =
-        ravi.x + padding;
-
-    const raviRight =
-        ravi.x +
-        ravi.width -
-        padding;
-
-    const raviTop =
-        ravi.y + padding;
-
-    const raviBottom =
-        ravi.y +
-        ravi.height -
-        padding;
-
-
-    const pipeLeft =
-        pipe.x;
-
-    const pipeRight =
-        pipe.x +
-        pipeWidth;
-
-
-    const touchingX =
-        raviRight >
-        pipeLeft &&
-        raviLeft <
-        pipeRight;
-
-
-    const touchingTopPipe =
-        raviTop <
-        pipe.top;
-
-
-    const touchingBottomPipe =
-        raviBottom >
-        pipe.bottom;
-
-
-    return (
-        touchingX &&
-        (
-            touchingTopPipe ||
-            touchingBottomPipe
-        )
+  best =
+    Math.max(
+      best,
+      score
     );
+
+
+  localStorage.setItem(
+    "flappyRaviBest",
+    best
+  );
+
+
+  finalScoreEl.textContent =
+    score;
+
+
+  bestScoreEl.textContent =
+    best;
+
+
+  gameOverScreen
+    .classList
+    .remove("hidden");
+
+
+  tapHint
+    .classList
+    .add("hidden");
+
+
+  stopMusic();
+
+
+  /* GAME OVER SOUND */
+
+  gameOverAudio.currentTime = 0;
+
+
+  if (!muted) {
+
+    gameOverAudio
+      .play()
+      .catch(() => {});
+
+  }
+
+
+  /* Crash particles */
+
+  for (
+    let i = 0;
+    i < 18;
+    i++
+  ) {
+
+    particles.push({
+
+      x: ravi.x,
+
+      y: ravi.y,
+
+      vx:
+        (Math.random() - 0.5) *
+        400,
+
+      vy:
+        (Math.random() - 0.5) *
+        400,
+
+      life:
+        0.5 +
+        Math.random() * 0.6
+
+    });
+
+  }
+
 }
 
 
-// =============================
-// BACKGROUND
-// =============================
+/* =========================================
+   UPDATE
+========================================= */
+
+function update(dt) {
+
+  ravi.vy +=
+    state.gravity * dt;
+
+
+  ravi.y +=
+    ravi.vy * dt;
+
+
+  const targetRotation =
+    Math.max(
+      -0.45,
+      Math.min(
+        1.15,
+        ravi.vy / 500
+      )
+    );
+
+
+  ravi.rotation +=
+    (
+      targetRotation -
+      ravi.rotation
+    ) *
+    Math.min(
+      1,
+      dt * 8
+    );
+
+
+  spawnTimer += dt;
+
+
+  if (spawnTimer > 1.55) {
+
+    spawnTimer = 0;
+
+    spawnPipe(
+      W + 30
+    );
+
+  }
+
+
+  for (const p of pipes) {
+
+    p.x -=
+      state.speed * dt;
+
+
+    if (
+      !p.scored &&
+      p.x + state.pipeWidth <
+      ravi.x - ravi.w * 0.3
+    ) {
+
+      p.scored = true;
+
+      score++;
+
+      scoreEl.textContent =
+        score;
+
+    }
+
+  }
+
+
+  pipes =
+    pipes.filter(
+      p =>
+        p.x >
+        -state.pipeWidth - 20
+    );
+
+
+  for (const particle of particles) {
+
+    particle.x +=
+      particle.vx * dt;
+
+    particle.y +=
+      particle.vy * dt;
+
+    particle.life -= dt;
+
+  }
+
+
+  particles =
+    particles.filter(
+      p => p.life > 0
+    );
+
+
+  /* Ravi hitbox */
+
+  const rx =
+    ravi.x -
+    ravi.w * 0.30;
+
+  const ry =
+    ravi.y -
+    ravi.h * 0.28;
+
+  const rw =
+    ravi.w * 0.60;
+
+  const rh =
+    ravi.h * 0.56;
+
+
+  /* Ground / ceiling */
+
+  if (
+    ravi.y +
+      ravi.h * 0.3 >
+      H - state.ground ||
+
+    ravi.y -
+      ravi.h * 0.3 <
+      0
+  ) {
+
+    gameOver();
+
+    return;
+
+  }
+
+
+  /* Pipes */
+
+  for (const p of pipes) {
+
+    const hitX =
+      rx + rw > p.x &&
+      rx <
+        p.x +
+        state.pipeWidth;
+
+
+    const hitTop =
+      ry < p.top;
+
+
+    const hitBottom =
+      ry + rh >
+      p.top + p.gap;
+
+
+    if (
+      hitX &&
+      (hitTop || hitBottom)
+    ) {
+
+      gameOver();
+
+      return;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================
+   BACKGROUND
+========================================= */
 
 function drawBackground() {
 
-    const gradient =
-        ctx.createLinearGradient(
-            0,
-            0,
-            0,
-            GAME_HEIGHT
-        );
-
-
-    gradient.addColorStop(
-        0,
-        "#64c8ff"
-    );
-
-    gradient.addColorStop(
-        1,
-        "#d9f5ff"
+  const sky =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      H
     );
 
 
-    ctx.fillStyle =
-        gradient;
-
-    ctx.fillRect(
-        0,
-        0,
-        GAME_WIDTH,
-        GAME_HEIGHT
-    );
+  sky.addColorStop(
+    0,
+    "#55d8ef"
+  );
 
 
-    // CLOUDS
-
-    drawCloud(
-        70,
-        100,
-        1
-    );
-
-    drawCloud(
-        260,
-        170,
-        0.8
-    );
-
-    drawCloud(
-        150,
-        260,
-        0.6
-    );
+  sky.addColorStop(
+    1,
+    "#b5f4ff"
+  );
 
 
-    // GROUND
+  ctx.fillStyle = sky;
 
-    ctx.fillStyle =
-        "#75c043";
-
-    ctx.fillRect(
-        0,
-        GAME_HEIGHT - 45,
-        GAME_WIDTH,
-        45
-    );
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
 
 
-    ctx.fillStyle =
-        "#4e9228";
+  /* Clouds */
 
-    ctx.fillRect(
-        0,
-        GAME_HEIGHT - 45,
-        GAME_WIDTH,
-        8
-    );
-}
+  ctx.fillStyle =
+    "rgba(255,255,255,.72)";
 
 
-// =============================
-// CLOUD
-// =============================
+  for (
+    let i = 0;
+    i < 5;
+    i++
+  ) {
 
-function drawCloud(
-    x,
-    y,
-    scale
-) {
-
-    ctx.save();
-
-    ctx.translate(
-        x,
-        y
-    );
-
-    ctx.scale(
-        scale,
-        scale
-    );
+    const x =
+      (
+        (
+          i * 150 -
+          (performance.now() / 90) %
+          900
+        ) +
+        900
+      ) %
+      900 -
+      100;
 
 
-    ctx.fillStyle =
-        "rgba(255,255,255,0.8)";
+    const y =
+      95 +
+      (i % 3) * 80;
 
 
     ctx.beginPath();
 
-    ctx.arc(
-        0,
-        10,
-        20,
-        0,
-        Math.PI * 2
-    );
 
     ctx.arc(
-        25,
-        0,
-        27,
-        0,
-        Math.PI * 2
+      x,
+      y,
+      28,
+      0,
+      Math.PI * 2
     );
 
+
     ctx.arc(
-        55,
-        10,
-        20,
-        0,
-        Math.PI * 2
+      x + 28,
+      y - 12,
+      38,
+      0,
+      Math.PI * 2
     );
+
+
+    ctx.arc(
+      x + 62,
+      y,
+      28,
+      0,
+      Math.PI * 2
+    );
+
 
     ctx.fill();
 
-    ctx.restore();
+  }
+
+
+  /* City */
+
+  ctx.fillStyle =
+    "rgba(104,185,196,.45)";
+
+
+  for (
+    let i = 0;
+    i < 12;
+    i++
+  ) {
+
+    const bw =
+      35 +
+      (i % 4) * 12;
+
+
+    const bh =
+      50 +
+      (i % 5) * 25;
+
+
+    const x =
+      i * 55 - 10;
+
+
+    ctx.fillRect(
+      x,
+      H -
+        state.ground -
+        bh,
+      bw,
+      bh
+    );
+
+  }
+
+
+  /* Grass */
+
+  ctx.fillStyle =
+    "#62d85b";
+
+
+  ctx.fillRect(
+    0,
+    H - state.ground,
+    W,
+    state.ground
+  );
+
+
+  ctx.fillStyle =
+    "#42ad43";
+
+
+  ctx.fillRect(
+    0,
+    H - state.ground,
+    W,
+    9
+  );
+
+
+  ctx.fillStyle =
+    "#e5c76a";
+
+
+  ctx.fillRect(
+    0,
+    H - 16,
+    W,
+    16
+  );
+
 }
 
 
-// =============================
-// DRAW PIPES
-// =============================
+/* =========================================
+   PIPE
+========================================= */
+
+function drawPipe(
+  x,
+  y,
+  height,
+  capAtBottom
+) {
+
+  const capH = 24;
+
+  const capW =
+    state.pipeWidth + 12;
+
+  const capX =
+    x - 6;
+
+
+  ctx.fillStyle =
+    "#4ab82c";
+
+
+  ctx.strokeStyle =
+    "#236b19";
+
+
+  ctx.lineWidth = 4;
+
+
+  if (capAtBottom) {
+
+    ctx.fillRect(
+      x,
+      y,
+      state.pipeWidth,
+      height
+    );
+
+
+    ctx.strokeRect(
+      x,
+      y,
+      state.pipeWidth,
+      height
+    );
+
+
+    ctx.fillRect(
+      capX,
+      y + height - capH,
+      capW,
+      capH
+    );
+
+
+    ctx.strokeRect(
+      capX,
+      y + height - capH,
+      capW,
+      capH
+    );
+
+  }
+
+  else {
+
+    ctx.fillRect(
+      x,
+      y,
+      state.pipeWidth,
+      height
+    );
+
+
+    ctx.strokeRect(
+      x,
+      y,
+      state.pipeWidth,
+      height
+    );
+
+
+    ctx.fillRect(
+      capX,
+      y,
+      capW,
+      capH
+    );
+
+
+    ctx.strokeRect(
+      capX,
+      y,
+      capW,
+      capH
+    );
+
+  }
+
+
+  ctx.fillStyle =
+    "rgba(255,255,255,.22)";
+
+
+  ctx.fillRect(
+    x + 10,
+    y +
+      (
+        capAtBottom
+          ? 0
+          : capH
+      ),
+    8,
+    Math.max(
+      0,
+      height - capH
+    )
+  );
+
+}
+
+
+/* =========================================
+   MANOJ TIWARI PIPE STICKER
+========================================= */
+
+function drawManojSticker(
+  p,
+  pipeY,
+  pipeHeight,
+  onTop
+) {
+
+  if (
+    !p.hasManoj ||
+    !manojImg.complete ||
+    pipeHeight < 85
+  ) {
+
+    return;
+
+  }
+
+
+  const size =
+    Math.min(
+      64,
+      state.pipeWidth * 0.88
+    ) *
+    p.manojScale;
+
+
+  const cx =
+    p.x +
+    state.pipeWidth / 2;
+
+
+  const cy =
+    onTop
+
+      ? pipeY +
+        Math.min(
+          pipeHeight -
+            size / 2,
+          48 +
+            size / 2
+        )
+
+      : pipeY +
+        Math.max(
+          size / 2,
+          pipeHeight -
+            48 -
+            size / 2
+        );
+
+
+  ctx.save();
+
+
+  /* Sticker background */
+
+  ctx.fillStyle =
+    "#fff4c7";
+
+
+  ctx.strokeStyle =
+    "#171717";
+
+
+  ctx.lineWidth = 4;
+
+
+  ctx.fillRect(
+    cx -
+      size / 2 -
+      4,
+
+    cy -
+      size / 2 -
+      4,
+
+    size + 8,
+
+    size + 8
+  );
+
+
+  ctx.strokeRect(
+    cx -
+      size / 2 -
+      4,
+
+    cy -
+      size / 2 -
+      4,
+
+    size + 8,
+
+    size + 8
+  );
+
+
+  /* Clip photo */
+
+  ctx.beginPath();
+
+
+  ctx.rect(
+    cx - size / 2,
+    cy - size / 2,
+    size,
+    size
+  );
+
+
+  ctx.clip();
+
+
+  ctx.drawImage(
+    manojImg,
+
+    cx -
+      size / 2,
+
+    cy -
+      size / 2,
+
+    size,
+    size
+  );
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================
+   DRAW PIPES
+========================================= */
 
 function drawPipes() {
 
-    pipes.forEach(
-        pipe => {
+  for (const p of pipes) {
 
-            drawPipe(
-                pipe.x,
-                0,
-                pipeWidth,
-                pipe.top,
-                true
-            );
+    /* Top pipe */
 
-
-            drawPipe(
-                pipe.x,
-                pipe.bottom,
-                pipeWidth,
-                GAME_HEIGHT -
-                pipe.bottom,
-                false
-            );
-
-        }
-    );
-}
-
-
-function drawPipe(
-    x,
-    y,
-    width,
-    height,
-    topPipe
-) {
-
-    // BODY
-
-    ctx.fillStyle =
-        "#36a852";
-
-    ctx.fillRect(
-        x,
-        y,
-        width,
-        height
+    drawPipe(
+      p.x,
+      0,
+      p.top,
+      true
     );
 
 
-    // HIGHLIGHT
+    /* Bottom pipe */
 
-    ctx.fillStyle =
-        "#67d36f";
+    const bottomY =
+      p.top + p.gap;
 
-    ctx.fillRect(
-        x + 8,
-        y,
-        10,
-        height
+
+    const bottomHeight =
+      H -
+      state.ground -
+      bottomY;
+
+
+    drawPipe(
+      p.x,
+      bottomY,
+      bottomHeight,
+      false
     );
 
 
-    // DARK SIDE
+    /* Random Manoj */
 
-    ctx.fillStyle =
-        "#197a38";
+    if (p.manojOnTop) {
 
-    ctx.fillRect(
-        x + width - 10,
-        y,
-        10,
-        height
-    );
-
-
-    // PIPE LIP
-
-    const lipHeight = 22;
-
-    const lipWidth =
-        width + 12;
-
-    const lipX =
-        x - 6;
-
-    let lipY;
-
-
-    if (topPipe) {
-
-        lipY =
-            height -
-            lipHeight;
-
-    } else {
-
-        lipY = y;
+      drawManojSticker(
+        p,
+        0,
+        p.top,
+        true
+      );
 
     }
 
+    else {
 
-    ctx.fillStyle =
-        "#299847";
+      drawManojSticker(
+        p,
+        bottomY,
+        bottomHeight,
+        false
+      );
 
-    ctx.fillRect(
-        lipX,
-        lipY,
-        lipWidth,
-        lipHeight
-    );
+    }
 
+  }
 
-    ctx.fillStyle =
-        "#67d36f";
-
-    ctx.fillRect(
-        lipX + 8,
-        lipY + 3,
-        10,
-        lipHeight - 6
-    );
-
-
-    ctx.fillStyle =
-        "#176d32";
-
-    ctx.fillRect(
-        lipX +
-        lipWidth -
-        15,
-        lipY,
-        9,
-        lipHeight
-    );
 }
 
 
-// =============================
-// DRAW RAVI
-// =============================
+/* =========================================
+   DRAW RAVI
+========================================= */
 
 function drawRavi() {
 
-    ctx.save();
+  if (!raviImg.complete)
+    return;
 
 
-    ctx.translate(
-        ravi.x +
-        ravi.width / 2,
+  ctx.save();
 
-        ravi.y +
-        ravi.height / 2
+
+  ctx.translate(
+    ravi.x,
+    ravi.y
+  );
+
+
+  ctx.rotate(
+    ravi.rotation
+  );
+
+
+  /*
+    IMPORTANT:
+
+    No circle.
+    No egg blob.
+    No background shape.
+
+    Ravi PNG is transparent.
+  */
+
+
+  ctx.drawImage(
+
+    raviImg,
+
+    -ravi.w / 2,
+
+    -ravi.h / 2,
+
+    ravi.w,
+
+    ravi.h
+
+  );
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================
+   PARTICLES
+========================================= */
+
+function drawParticles() {
+
+  for (const p of particles) {
+
+    ctx.globalAlpha =
+      Math.max(
+        0,
+        p.life
+      );
+
+
+    ctx.fillStyle =
+      "#ffb000";
+
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      5,
+      5
+    );
+
+  }
+
+
+  ctx.globalAlpha = 1;
+
+}
+
+
+/* =========================================
+   DRAW EVERYTHING
+========================================= */
+
+function draw() {
+
+  drawBackground();
+
+  drawPipes();
+
+  drawParticles();
+
+  drawRavi();
+
+}
+
+
+/* =========================================
+   GAME LOOP
+========================================= */
+
+function loop(now) {
+
+  if (!running) {
+
+    draw();
+
+    return;
+
+  }
+
+
+  const dt =
+    Math.min(
+      0.032,
+      (now - lastTime) /
+      1000
     );
 
 
-    ctx.rotate(
-        ravi.rotation *
-        Math.PI /
-        180
+  lastTime = now;
+
+
+  update(dt);
+
+  draw();
+
+
+  if (running) {
+
+    requestAnimationFrame(
+      loop
     );
 
+  }
 
-    // ROUND IMAGE
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        0,
-        ravi.width / 2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.clip();
+}
 
 
-    if (raviImage.complete) {
+/* =========================================
+   CONTROLS
+========================================= */
 
-        ctx.drawImage(
+function userFlap(e) {
 
-            raviImage,
+  if (e)
+    e.preventDefault();
 
-            -ravi.width / 2,
+  flap();
 
-            -ravi.height / 2,
+}
 
-            ravi.width,
 
-            ravi.height
+startBtn.addEventListener(
+  "click",
+  startGame
+);
 
-        );
 
-    } else {
+restartBtn.addEventListener(
+  "click",
+  startGame
+);
 
-        ctx.fillStyle =
-            "#ddd";
 
-        ctx.fillRect(
-            -ravi.width / 2,
-            -ravi.height / 2,
-            ravi.width,
-            ravi.height
-        );
+canvas.addEventListener(
+  "pointerdown",
+  userFlap
+);
+
+
+window.addEventListener(
+  "keydown",
+  (e) => {
+
+    if (e.code === "Space") {
+
+      e.preventDefault();
+
+
+      if (!running) {
+
+        startGame();
+
+      }
+
+      else {
+
+        flap();
+
+      }
 
     }
 
-
-    ctx.restore();
-
-
-    // BORDER
-
-    ctx.save();
-
-    ctx.translate(
-        ravi.x +
-        ravi.width / 2,
-
-        ravi.y +
-        ravi.height / 2
-    );
+  }
+);
 
 
-    ctx.strokeStyle =
-        "#111";
+/* =========================================
+   INITIALIZE
+========================================= */
 
-    ctx.lineWidth = 4;
+resetGame();
 
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        0,
-        ravi.width / 2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-
-// =============================
-// SCORE ON CANVAS
-// =============================
-
-function drawCanvasScore() {
-
-    ctx.save();
-
-
-    ctx.font =
-        "bold 42px Arial";
-
-    ctx.textAlign =
-        "center";
-
-
-    // SHADOW
-
-    ctx.fillStyle =
-        "rgba(0,0,0,0.25)";
-
-    ctx.fillText(
-        score,
-        GAME_WIDTH / 2 + 3,
-        63
-    );
-
-
-    // SCORE
-
-    ctx.fillStyle =
-        "#ffffff";
-
-    ctx.fillText(
-        score,
-        GAME_WIDTH / 2,
-        60
-    );
-
-
-    ctx.restore();
-}
-
-
-// =============================
-// GAME LOOP
-// =============================
-
-function gameLoop() {
-
-    if (!gameRunning) return;
-
-
-    frame++;
-
-
-    updateRavi();
-
-    updatePipes();
-
-
-    drawBackground();
-
-    drawPipes();
-
-    drawRavi();
-
-    drawCanvasScore();
-
-
-    requestAnimationFrame(
-        gameLoop
-    );
-}
-
-
-// =============================
-// INITIAL SCREEN
-// =============================
-
-drawBackground();
-
-drawRavi();
-
-drawCanvasScore();
+draw();
